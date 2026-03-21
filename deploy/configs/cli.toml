@@ -1,0 +1,11 @@
+# NautilusTrader CLI Configuration
+# Copy to ~/.nautilus/cli.toml
+
+[connection]
+host = "localhost"
+port = 8001
+# api_key = "your-api-key"
+
+[output]
+format = "table"
+color = true

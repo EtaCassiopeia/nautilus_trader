@@ -1,0 +1,58 @@
+{
+    "trader_id": "TRADER-001",
+    "logging": {
+        "log_level": "INFO",
+        "log_level_file": "DEBUG"
+    },
+    "exec_engine": {
+        "reconciliation": false,
+        "reconciliation_lookback_mins": 1440
+    },
+    "data_clients": {
+        "BINANCE": {
+            "factory_path": "nautilus_trader.adapters.binance:BinanceLiveDataClientFactory",
+            "config_path": "nautilus_trader.adapters.binance:BinanceDataClientConfig",
+            "config": {
+                "api_key": null,
+                "api_secret": null,
+                "account_type": "SPOT",
+                "testnet": true,
+                "instrument_provider": {
+                    "load_all": true
+                }
+            }
+        }
+    },
+    "exec_clients": {
+        "BINANCE": {
+            "factory_path": "nautilus_trader.adapters.binance:BinanceLiveExecClientFactory",
+            "config_path": "nautilus_trader.adapters.binance:BinanceExecClientConfig",
+            "config": {
+                "api_key": null,
+                "api_secret": null,
+                "account_type": "SPOT",
+                "testnet": true,
+                "instrument_provider": {
+                    "load_all": true
+                },
+                "max_retries": 3
+            }
+        }
+    },
+    "api_server": {
+        "enabled": true,
+        "host": "0.0.0.0",
+        "port": 8001,
+        "api_key": null,
+        "cors_origins": ["*"],
+        "event_stream": {
+            "max_clients": 10,
+            "replay_buffer_size": 1000
+        }
+    },
+    "timeout_connection": 30.0,
+    "timeout_reconciliation": 10.0,
+    "timeout_portfolio": 10.0,
+    "timeout_disconnection": 10.0,
+    "timeout_post_stop": 5.0
+}

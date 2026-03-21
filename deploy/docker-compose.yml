@@ -1,0 +1,132 @@
+# ---------------------------------------------------------------------------
+#  NautilusTrader AI Agent Control Plane — Local Development Stack
+#
+#  Services:
+#    redis             — Message bus backing store
+#    postgres          — Cache & order persistence (optional)
+#    nautilus          — Trading node with API server on :8001
+#    mcp-server        — MCP server for Claude integration (stdio / SSE on :8002)
+#
+#  Usage:
+#    docker compose -f deploy/docker-compose.yml up -d
+#    docker compose -f deploy/docker-compose.yml logs -f nautilus
+#    docker compose -f deploy/docker-compose.yml down
+#
+#  Quick start (just infra, run nautilus locally):
+#    docker compose -f deploy/docker-compose.yml up -d redis postgres
+# ---------------------------------------------------------------------------
+
+services:
+  # ── Infrastructure ───────────────────────────────────────────────────────
+
+  redis:
+    container_name: nautilus-redis
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - nautilus-net
+
+  postgres:
+    container_name: nautilus-postgres
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nautilus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
+      POSTGRES_DB: ${POSTGRES_DB:-nautilus}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../schema/sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nautilus"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - nautilus-net
+
+  # ── NautilusTrader Node ──────────────────────────────────────────────────
+
+  nautilus:
+    container_name: nautilus-node
+    build:
+      context: ..
+      dockerfile: deploy/nautilus.dockerfile
+    env_file:
+      - .env.example
+    environment:
+      # Redis connection
+      NAUTILUS_REDIS_HOST: redis
+      NAUTILUS_REDIS_PORT: 6379
+      # Postgres connection (optional)
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-nautilus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pass}
+      POSTGRES_DB: ${POSTGRES_DB:-nautilus}
+      # API Server
+      NAUTILUS_API_HOST: "0.0.0.0"
+      NAUTILUS_API_PORT: 8001
+      NAUTILUS_API_KEY: ${NAUTILUS_API_KEY:-}
+      # Trading
+      NAUTILUS_TRADER_ID: ${NAUTILUS_TRADER_ID:-TRADER-001}
+      NAUTILUS_ENVIRONMENT: ${NAUTILUS_ENVIRONMENT:-sandbox}
+    ports:
+      - "${API_PORT:-8001}:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    volumes:
+      - nautilus-data:/opt/nautilus/data
+      - ./configs:/opt/nautilus/configs:ro
+    restart: unless-stopped
+    networks:
+      - nautilus-net
+
+  # ── MCP Server (SSE transport for remote access) ─────────────────────────
+
+  mcp-server:
+    container_name: nautilus-mcp
+    build:
+      context: ..
+      dockerfile: deploy/nautilus.dockerfile
+    entrypoint: ["python3", "-m", "nautilus_trader.mcp.server"]
+    environment:
+      NAUTILUS_API_URL: http://nautilus:8001
+      NAUTILUS_API_KEY: ${NAUTILUS_API_KEY:-}
+      NAUTILUS_SAFETY_LEVEL: ${MCP_SAFETY_LEVEL:-STANDARD}
+      NAUTILUS_MCP_TRANSPORT: sse
+      NAUTILUS_MCP_SSE_HOST: "0.0.0.0"
+      NAUTILUS_MCP_SSE_PORT: 8002
+    ports:
+      - "${MCP_PORT:-8002}:8002"
+    depends_on:
+      nautilus:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - nautilus-net
+
+networks:
+  nautilus-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+  nautilus-data:
