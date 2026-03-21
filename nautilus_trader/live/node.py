@@ -95,6 +95,7 @@ class TradingNode:
 
         # Async tasks
         self._task_streaming: asyncio.Future | None = None
+        self._api_server = None  # Optional ApiServer instance
 
         # State flags
         self._is_built = False
@@ -374,6 +375,14 @@ class TradingNode:
                 )
                 self._task_streaming.add_done_callback(self._handle_streaming_exception)
 
+            # Start API server if configured
+            if self._config.api_server and self._config.api_server.enabled:
+                from nautilus_trader.api.server import ApiServer
+
+                self._api_server = ApiServer(self.kernel, self._config.api_server)
+                api_task = asyncio.create_task(self._api_server.start())
+                api_task.add_done_callback(self._handle_api_server_exception)
+
             await asyncio.gather(*tasks)
         except asyncio.CancelledError as e:
             self.kernel.logger.error(str(e))
@@ -404,6 +413,9 @@ class TradingNode:
         If save strategy is configured, then strategy states will be saved.
 
         """
+        if self._api_server is not None:
+            await self._api_server.stop()
+
         await self.kernel.stop_async()
 
     def dispose(self) -> None:
@@ -487,6 +499,14 @@ class TradingNode:
             return  # Normal control flow
         except BaseException as e:
             self.kernel.logger.exception("Error in external message streaming task", e)
+
+    def _handle_api_server_exception(self, task: asyncio.Task) -> None:
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            return  # Normal control flow
+        except BaseException as e:
+            self.kernel.logger.exception("Error in API server task", e)
 
     def _loop_sig_handler(self, sig: signal.Signals) -> None:
         self.kernel.logger.warning(f"Received {sig.name}, shutting down")
