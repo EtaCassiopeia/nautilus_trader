@@ -76,6 +76,13 @@ def create_app(kernel: NautilusKernel, config: ApiServerConfig) -> FastAPI:
             },
         )
 
+    # Register route modules
+    from nautilus_trader.api.routes.node import router as node_router
+    from nautilus_trader.api.routes.strategies import router as strategies_router
+
+    app.include_router(node_router)
+    app.include_router(strategies_router)
+
     return app
 
 
