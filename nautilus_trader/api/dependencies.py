@@ -23,7 +23,9 @@ from fastapi import Request
 if TYPE_CHECKING:
     from nautilus_trader.cache.base import CacheFacade
     from nautilus_trader.common.component import MessageBus
+    from nautilus_trader.data.engine import DataEngine
     from nautilus_trader.portfolio.base import PortfolioFacade
+    from nautilus_trader.risk.engine import RiskEngine
     from nautilus_trader.system.kernel import NautilusKernel
     from nautilus_trader.trading.trader import Trader
 
@@ -46,3 +48,11 @@ def get_portfolio(request: Request) -> PortfolioFacade:
 
 def get_msgbus(request: Request) -> MessageBus:
     return request.app.state.kernel.msgbus
+
+
+def get_data_engine(request: Request) -> DataEngine:
+    return request.app.state.kernel.data_engine
+
+
+def get_risk_engine(request: Request) -> RiskEngine:
+    return request.app.state.kernel.risk_engine
