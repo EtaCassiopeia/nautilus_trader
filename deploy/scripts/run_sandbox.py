@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------------------------------------------
-#  Run NautilusTrader with Binance testnet and a simple EMA cross strategy.
+#  Run NautilusTrader with Binance testnet data feed and EMA cross strategy.
 #
 #  Prerequisites:
 #    - Redis running (docker compose -f deploy/docker-compose.dev.yml up -d redis)
-#    - BINANCE_API_KEY and BINANCE_API_SECRET env vars set (testnet keys)
+#    - BINANCE_TESTNET_API_KEY and BINANCE_TESTNET_API_SECRET env vars set
 #
 #  Get testnet keys at: https://testnet.binance.vision/
 #
@@ -16,35 +16,40 @@ import os
 import sys
 from decimal import Decimal
 
-# Check for API keys early
-if not os.environ.get("BINANCE_API_KEY") or not os.environ.get("BINANCE_API_SECRET"):
+# Check for API keys — testnet uses BINANCE_TESTNET_API_KEY
+api_key = os.environ.get("BINANCE_TESTNET_API_KEY") or os.environ.get("BINANCE_API_KEY")
+api_secret = os.environ.get("BINANCE_TESTNET_API_SECRET") or os.environ.get("BINANCE_API_SECRET")
+
+if not api_key or not api_secret:
     print("=" * 60)
-    print("BINANCE_API_KEY and BINANCE_API_SECRET must be set.")
+    print("Binance testnet API keys not found.")
     print()
     print("Get free testnet keys at: https://testnet.binance.vision/")
     print()
     print("Then run:")
-    print("  export BINANCE_API_KEY=your_key")
-    print("  export BINANCE_API_SECRET=your_secret")
+    print("  export BINANCE_TESTNET_API_KEY=your_key")
+    print("  export BINANCE_TESTNET_API_SECRET=your_secret")
     print("  uv run python deploy/scripts/run_sandbox.py")
     print("=" * 60)
     sys.exit(1)
 
+# Ensure the env vars Nautilus expects are set
+os.environ["BINANCE_TESTNET_API_KEY"] = api_key
+os.environ["BINANCE_TESTNET_API_SECRET"] = api_secret
+
 from nautilus_trader.adapters.binance import BINANCE
 from nautilus_trader.adapters.binance import BinanceAccountType
 from nautilus_trader.adapters.binance import BinanceDataClientConfig
-from nautilus_trader.adapters.binance import BinanceExecClientConfig
 from nautilus_trader.adapters.binance import BinanceLiveDataClientFactory
-from nautilus_trader.adapters.binance import BinanceLiveExecClientFactory
 from nautilus_trader.api.config import ApiServerConfig
 from nautilus_trader.api.config import EventStreamConfig
 from nautilus_trader.config import InstrumentProviderConfig
-from nautilus_trader.config import LiveExecEngineConfig
 from nautilus_trader.config import LoggingConfig
 from nautilus_trader.config import TradingNodeConfig
 from nautilus_trader.examples.strategies.ema_cross import EMACross
 from nautilus_trader.examples.strategies.ema_cross import EMACrossConfig
 from nautilus_trader.live.node import TradingNode
+from nautilus_trader.model.data import BarType
 from nautilus_trader.model.identifiers import InstrumentId
 from nautilus_trader.model.identifiers import TraderId
 
@@ -59,26 +64,14 @@ def main():
             log_level="INFO",
             log_level_file="DEBUG",
         ),
-        exec_engine=LiveExecEngineConfig(
-            reconciliation=False,
-        ),
+        # Data client only — no exec client (testnet HMAC keys don't support WS session)
         data_clients={
             BINANCE: BinanceDataClientConfig(
-                api_key=None,  # reads BINANCE_API_KEY env var
-                api_secret=None,  # reads BINANCE_API_SECRET env var
+                api_key=None,  # reads BINANCE_TESTNET_API_KEY env var
+                api_secret=None,  # reads BINANCE_TESTNET_API_SECRET env var
                 account_type=BinanceAccountType.SPOT,
                 testnet=True,
                 instrument_provider=InstrumentProviderConfig(load_all=True),
-            ),
-        },
-        exec_clients={
-            BINANCE: BinanceExecClientConfig(
-                api_key=None,
-                api_secret=None,
-                account_type=BinanceAccountType.SPOT,
-                testnet=True,
-                instrument_provider=InstrumentProviderConfig(load_all=True),
-                max_retries=3,
             ),
         },
         api_server=ApiServerConfig(
@@ -100,17 +93,16 @@ def main():
 
     node = TradingNode(config=config_node)
 
-    # Add data client and exec client factories
+    # Add data client factory
     node.add_data_client_factory(BINANCE, BinanceLiveDataClientFactory)
-    node.add_exec_client_factory(BINANCE, BinanceLiveExecClientFactory)
 
-    # Configure EMA cross strategy
+    # Configure EMA cross strategy on 1-minute bars
     strategy_config = EMACrossConfig(
         instrument_id=instrument_id,
-        bar_type=f"{instrument_id}-1-MINUTE-LAST-EXTERNAL",
+        bar_type=BarType.from_str(f"{instrument_id}-1-MINUTE-LAST-EXTERNAL"),
         fast_ema_period=10,
         slow_ema_period=20,
-        trade_size=Decimal("0.001"),  # Small size for testnet
+        trade_size=Decimal("0.001"),
         order_id_tag="001",
     )
     strategy = EMACross(config=strategy_config)
@@ -120,14 +112,18 @@ def main():
 
     print()
     print("=" * 60)
-    print(f"  NautilusTrader Sandbox")
+    print(f"  NautilusTrader Sandbox (data feed only)")
     print(f"  Trader:     SANDBOX-001")
     print(f"  Exchange:   Binance Spot (testnet)")
     print(f"  Symbol:     {symbol}")
-    print(f"  Strategy:   EMA Cross (10/20)")
+    print(f"  Strategy:   EMA Cross (10/20) on 1-min bars")
     print(f"  API:        http://localhost:8001")
     print(f"  Docs:       http://localhost:8001/docs")
     print(f"  Health:     http://localhost:8001/health")
+    print()
+    print("  Strategy receives live bars and generates signals.")
+    print("  No execution client — orders are not sent to exchange.")
+    print("  Press Ctrl+C to stop.")
     print("=" * 60)
     print()
 
