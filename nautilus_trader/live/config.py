@@ -20,6 +20,7 @@ import msgspec
 from nautilus_trader.common import Environment
 from nautilus_trader.common.config import ActorConfig
 from nautilus_trader.common.config import InstrumentProviderConfig
+from nautilus_trader.api.config import ApiServerConfig
 from nautilus_trader.common.config import NautilusConfig
 from nautilus_trader.common.config import NonNegativeInt
 from nautilus_trader.common.config import PositiveFloat
@@ -296,6 +297,9 @@ class TradingNodeConfig(NautilusKernelConfig, frozen=True):
         The data client configurations.
     exec_clients : dict[str, ImportableConfig | LiveExecClientConfig], optional
         The execution client configurations.
+    api_server : ApiServerConfig, optional
+        The embedded API server configuration.
+        When ``None``, the API server is not started.
 
     """
 
@@ -306,6 +310,7 @@ class TradingNodeConfig(NautilusKernelConfig, frozen=True):
     exec_engine: LiveExecEngineConfig = LiveExecEngineConfig()
     data_clients: dict[str, LiveDataClientConfig] = {}
     exec_clients: dict[str, LiveExecClientConfig] = {}
+    api_server: ApiServerConfig | None = None
 
     def __post_init__(self):
         if isinstance(self.trader_id, str):
