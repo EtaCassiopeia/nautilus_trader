@@ -119,3 +119,69 @@ class AgentConfig:
         if url.startswith("https://"):
             return url.replace("https://", "wss://", 1) + "/ws/events"
         return url.replace("http://", "ws://", 1) + "/ws/events"
+
+
+@dataclass(frozen=True)
+class ModelConfig:
+    """
+    Model configuration for the two-tier reasoning strategy.
+
+    Parameters
+    ----------
+    triage_model : str
+        Fast model for event classification and triage.
+    analyst_model : str
+        Model for the analyst team assessments.
+    debate_model : str
+        Model for deep reasoning debate.
+    risk_model : str
+        Model for risk assessment.
+    decision_model : str
+        Model for final portfolio decision.
+
+    """
+
+    triage_model: str = "claude-haiku-4-5-20251001"
+    analyst_model: str = "claude-sonnet-4-20250514"
+    debate_model: str = "claude-opus-4-20250514"
+    risk_model: str = "claude-sonnet-4-20250514"
+    decision_model: str = "claude-opus-4-20250514"
+
+
+@dataclass(frozen=True)
+class EnhancedAgentConfig(AgentConfig):
+    """
+    Extended configuration for the AI agent with multi-model orchestration.
+
+    Adds support for the two-tier reasoning strategy with analyst teams,
+    debate rounds, risk consensus, and persistent trade memory.
+
+    Parameters
+    ----------
+    models : ModelConfig
+        Model assignments for the two-tier strategy.
+    max_debate_rounds : int
+        Maximum number of debate rounds between analysts.
+    risk_consensus_threshold : int
+        Number of risk assessors (out of 3) that must approve a trade.
+    enable_memory : bool
+        Whether to enable persistent cross-cycle trade memory.
+    memory_storage_path : str, optional
+        Path to the JSONL file for trade memory persistence.
+    enable_debate : bool
+        Whether to enable the multi-analyst debate process.
+    enable_risk_team : bool
+        Whether to enable the risk assessment team.
+    analysts : list[str]
+        List of analyst roles to include in the team.
+
+    """
+
+    models: ModelConfig = field(default_factory=ModelConfig)
+    max_debate_rounds: int = 2
+    risk_consensus_threshold: int = 2
+    enable_memory: bool = True
+    memory_storage_path: str | None = None
+    enable_debate: bool = True
+    enable_risk_team: bool = True
+    analysts: list[str] = field(default_factory=lambda: ["technical", "sentiment", "risk"])
