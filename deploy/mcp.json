@@ -1,0 +1,16 @@
+{
+    "mcpServers": {
+        "nautilus-trader": {
+            "command": "python3",
+            "args": ["-m", "nautilus_trader.mcp.server"],
+            "env": {
+                "NAUTILUS_API_URL": "http://localhost:8001",
+                "NAUTILUS_SAFETY_LEVEL": "STANDARD"
+            }
+        },
+        "nautilus-trader-sse": {
+            "url": "http://localhost:8002/sse",
+            "_comment": "Use this when running the MCP server in Docker (SSE transport)"
+        }
+    }
+}

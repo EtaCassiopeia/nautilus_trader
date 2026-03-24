@@ -1,0 +1,20 @@
+# NautilusTrader MCP Server Configuration
+# Copy to ~/.nautilus/mcp.toml or pass via --config flag
+
+[connection]
+api_url = "http://localhost:8001"
+# api_key = "your-api-key"
+
+[safety]
+safety_level = "STANDARD"
+read_only = false
+
+[guardrails]
+# max_order_quantity = "1.0"
+# allowed_instruments = ["BTCUSDT-PERP.BINANCE", "ETHUSDT-PERP.BINANCE"]
+# blocked_instruments = []
+
+[transport]
+transport = "stdio"
+# sse_host = "0.0.0.0"
+# sse_port = 8002

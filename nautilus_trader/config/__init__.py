@@ -19,6 +19,8 @@ All configurations inherit from :class:`NautilusConfig` which in turn inherits f
 
 """
 
+from nautilus_trader.api.config import ApiServerConfig
+from nautilus_trader.api.config import EventStreamConfig
 from nautilus_trader.backtest.config import BacktestDataConfig
 from nautilus_trader.backtest.config import BacktestEngineConfig
 from nautilus_trader.backtest.config import BacktestRunConfig
@@ -85,6 +87,7 @@ from nautilus_trader.trading.config import StrategyFactory
 
 
 __all__ = [
+    "ApiServerConfig",
     "ActorConfig",
     "ActorFactory",
     "BacktestDataConfig",
@@ -99,6 +102,7 @@ __all__ = [
     "DatabaseConfig",
     "ExecAlgorithmConfig",
     "ExecAlgorithmFactory",
+    "EventStreamConfig",
     "ExecEngineConfig",
     "FXRolloverInterestConfig",
     "FeeModelFactory",
