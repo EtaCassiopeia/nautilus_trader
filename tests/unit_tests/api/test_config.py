@@ -17,6 +17,7 @@ import msgspec
 
 from nautilus_trader.api.config import ApiServerConfig
 from nautilus_trader.api.config import EventStreamConfig
+from nautilus_trader.common.config import msgspec_decoding_hook
 from nautilus_trader.common.config import msgspec_encoding_hook
 from nautilus_trader.live.config import TradingNodeConfig
 
@@ -156,7 +157,7 @@ class TestTradingNodeConfigWithApiServer:
             ),
         )
         encoded = msgspec.json.encode(config, enc_hook=msgspec_encoding_hook)
-        decoded = msgspec.json.decode(encoded, type=TradingNodeConfig)
+        decoded = msgspec.json.decode(encoded, type=TradingNodeConfig, dec_hook=msgspec_decoding_hook)
 
         assert decoded.api_server is not None
         assert decoded.api_server.enabled is True
@@ -168,6 +169,6 @@ class TestTradingNodeConfigWithApiServer:
     def test_trading_node_config_json_round_trip_without_api_server(self) -> None:
         config = TradingNodeConfig()
         encoded = msgspec.json.encode(config, enc_hook=msgspec_encoding_hook)
-        decoded = msgspec.json.decode(encoded, type=TradingNodeConfig)
+        decoded = msgspec.json.decode(encoded, type=TradingNodeConfig, dec_hook=msgspec_decoding_hook)
 
         assert decoded.api_server is None

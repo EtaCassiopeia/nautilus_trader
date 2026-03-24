@@ -76,7 +76,7 @@ def _format_csv(data: Any, columns: list[str] | None = None) -> str:
     for row in data:
         writer.writerow(row)
 
-    return output.getvalue().strip()
+    return output.getvalue().replace("\r\n", "\n").strip()
 
 
 def _format_table(

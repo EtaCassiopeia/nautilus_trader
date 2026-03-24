@@ -67,37 +67,37 @@ def _register_tools(
     try:
         from nautilus_trader.mcp.tools.node import register_node_tools
         register_node_tools(server, client, safety)
-    except ImportError:
-        logger.debug("Node tools module not available")
+    except (ImportError, AttributeError) as e:
+        logger.debug(f"Node tools module not available: {e}")
 
     try:
         from nautilus_trader.mcp.tools.strategies import register_strategy_tools
         register_strategy_tools(server, client, safety)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Strategy tools module not available")
 
     try:
         from nautilus_trader.mcp.tools.orders import register_order_tools
         register_order_tools(server, client, safety)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Order tools module not available")
 
     try:
         from nautilus_trader.mcp.tools.portfolio import register_portfolio_tools
         register_portfolio_tools(server, client, safety)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Portfolio tools module not available")
 
     try:
         from nautilus_trader.mcp.tools.market_data import register_market_data_tools
         register_market_data_tools(server, client, safety)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Market data tools module not available")
 
     try:
         from nautilus_trader.mcp.tools.risk import register_risk_tools
         register_risk_tools(server, client, safety)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Risk tools module not available")
 
     # Mutation tools
@@ -105,32 +105,32 @@ def _register_tools(
         try:
             from nautilus_trader.mcp.tools.node_mutations import register_node_mutation_tools
             register_node_mutation_tools(server, client, safety)
-        except ImportError:
+        except (ImportError, AttributeError):
             logger.debug("Node mutation tools module not available")
 
         try:
             from nautilus_trader.mcp.tools.strategy_mutations import register_strategy_mutation_tools
             register_strategy_mutation_tools(server, client, safety)
-        except ImportError:
+        except (ImportError, AttributeError):
             logger.debug("Strategy mutation tools module not available")
 
         try:
             from nautilus_trader.mcp.tools.order_mutations import register_order_mutation_tools
             register_order_mutation_tools(server, client, safety)
-        except ImportError:
+        except (ImportError, AttributeError):
             logger.debug("Order mutation tools module not available")
 
         try:
             from nautilus_trader.mcp.tools.risk_mutations import register_risk_mutation_tools
             register_risk_mutation_tools(server, client, safety)
-        except ImportError:
+        except (ImportError, AttributeError):
             logger.debug("Risk mutation tools module not available")
 
     # Resources
     try:
         from nautilus_trader.mcp.resources import register_resources
         register_resources(server, client)
-    except ImportError:
+    except (ImportError, AttributeError):
         logger.debug("Resources module not available")
 
 
